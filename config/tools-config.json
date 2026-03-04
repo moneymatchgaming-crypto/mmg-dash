@@ -1,0 +1,53 @@
+{
+  "tools": [
+    {
+      "id": "pnl-tracker",
+      "name": "PnL Tracker",
+      "description": "Track your on-chain profit and loss across positions",
+      "icon": "TrendingUp",
+      "slug": "pnl-tracker",
+      "category": "analytics",
+      "status": "active"
+    },
+    {
+      "id": "lp-calculator",
+      "name": "LP Calculator",
+      "description": "Calculate impermanent loss and LP position values",
+      "icon": "Calculator",
+      "slug": "lp-calculator",
+      "category": "defi",
+      "status": "active"
+    },
+    {
+      "id": "yield-tracker",
+      "name": "Yield Tracker",
+      "description": "Monitor yield farming positions across protocols",
+      "icon": "BarChart2",
+      "slug": "yield-tracker",
+      "category": "defi",
+      "status": "coming-soon"
+    },
+    {
+      "id": "portfolio",
+      "name": "Portfolio",
+      "description": "View your complete DeFi portfolio overview",
+      "icon": "Briefcase",
+      "slug": "portfolio",
+      "category": "analytics",
+      "status": "coming-soon"
+    },
+    {
+      "id": "token-screener",
+      "name": "Token Screener",
+      "description": "Screen and analyze tokens by on-chain metrics",
+      "icon": "ScanSearch",
+      "slug": "token-screener",
+      "category": "analytics",
+      "status": "coming-soon"
+    }
+  ],
+  "categories": [
+    { "id": "analytics", "label": "Analytics" },
+    { "id": "defi", "label": "DeFi Tools" }
+  ]
+}
