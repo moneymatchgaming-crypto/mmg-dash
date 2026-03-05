@@ -1,9 +1,18 @@
 {
   "tools": [
     {
+      "id": "portfolio",
+      "name": "Portfolio",
+      "description": "Current value of all token holdings and LP positions on Base",
+      "icon": "Briefcase",
+      "slug": "portfolio",
+      "category": "analytics",
+      "status": "active"
+    },
+    {
       "id": "pnl-tracker",
       "name": "PnL Tracker",
-      "description": "Track your on-chain profit and loss across positions",
+      "description": "True profit and loss with cost basis from transaction history",
       "icon": "TrendingUp",
       "slug": "pnl-tracker",
       "category": "analytics",
@@ -25,15 +34,6 @@
       "icon": "BarChart2",
       "slug": "yield-tracker",
       "category": "defi",
-      "status": "coming-soon"
-    },
-    {
-      "id": "portfolio",
-      "name": "Portfolio",
-      "description": "View your complete DeFi portfolio overview",
-      "icon": "Briefcase",
-      "slug": "portfolio",
-      "category": "analytics",
       "status": "coming-soon"
     },
     {

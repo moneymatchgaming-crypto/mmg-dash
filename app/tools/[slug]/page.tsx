@@ -7,6 +7,7 @@ import toolsConfig from "@/config/tools-config.json";
  * Add a new tool here when you create a new component under /components/tools/.
  */
 const toolRegistry: Record<string, ReturnType<typeof dynamic>> = {
+  "portfolio": dynamic(() => import("@/components/tools/portfolio")),
   "pnl-tracker": dynamic(() => import("@/components/tools/pnl-tracker")),
   "lp-calculator": dynamic(() => import("@/components/tools/lp-calculator")),
 };

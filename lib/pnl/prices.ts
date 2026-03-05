@@ -147,7 +147,7 @@ async function fetchDexScreenerPrice(tokenAddress: string): Promise<TokenPrice |
 
     // Pick the most liquid pair
     const pairs = (data.pairs ?? [])
-      .filter((p) => p.priceUsd && (p.liquidity?.usd ?? 0) > 1000)
+      .filter((p) => p.priceUsd && (p.liquidity?.usd ?? 0) > 100)
       .sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0));
 
     if (!pairs.length || !pairs[0].priceUsd) return null;
