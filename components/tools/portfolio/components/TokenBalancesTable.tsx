@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronDown, Coins } from "lucide-react";
-import { cn, formatUSD, formatPercent } from "@/lib/utils";
+import { cn, formatUSD, formatPrice, formatPercent, isSpamToken } from "@/lib/utils";
 import { DUST_THRESHOLD_USD, ETH_NATIVE_KEY } from "@/lib/pnl/constants";
 import type { TokenHolding, PriceMap } from "@/lib/pnl/types";
 
@@ -86,7 +86,7 @@ function TokenRow({
         <div className="flex items-center justify-end gap-1.5">
           <PriceSourceDot source={priceSource} />
           {price !== null ? (
-            <span className="text-foreground font-mono">{formatUSD(price)}</span>
+            <span className="text-foreground font-mono">{formatPrice(price)}</span>
           ) : (
             <span className="text-muted-foreground">—</span>
           )}
@@ -129,17 +129,22 @@ export function TokenBalancesTable({
   isLoading: boolean;
 }) {
   const [showDust, setShowDust] = useState(false);
+  const [showSpam, setShowSpam] = useState(false);
 
   const ethPrice = priceMap.get(ETH_NATIVE_KEY);
   const ethValue = ethPrice && nativeETH ? nativeETH.balanceFormatted * ethPrice.priceUSD : null;
 
   const allHoldings = holdings.filter((h) => h.balanceFormatted > 0);
 
+  // Split spam vs real — spam tokens are phishing airdrops with URLs/claim text in name
+  const spamHoldings    = allHoldings.filter((h) => isSpamToken(h.symbol, h.name));
+  const realHoldings    = allHoldings.filter((h) => !isSpamToken(h.symbol, h.name));
+
   // Separate unpriced tokens — always show them, never hide as dust
-  const unpricedHoldings = allHoldings.filter((h) => h.price === null);
-  const pricedHoldings = allHoldings.filter((h) => h.price !== null);
-  const mainHoldings = pricedHoldings.filter((h) => (h.valueUSD ?? 0) >= DUST_THRESHOLD_USD);
-  const dustHoldings = pricedHoldings.filter((h) => (h.valueUSD ?? 0) < DUST_THRESHOLD_USD);
+  const unpricedHoldings = realHoldings.filter((h) => h.price === null);
+  const pricedHoldings   = realHoldings.filter((h) => h.price !== null);
+  const mainHoldings     = pricedHoldings.filter((h) => (h.valueUSD ?? 0) >= DUST_THRESHOLD_USD);
+  const dustHoldings     = pricedHoldings.filter((h) => (h.valueUSD ?? 0) < DUST_THRESHOLD_USD);
 
   const displayed = [...unpricedHoldings, ...(showDust ? pricedHoldings : mainHoldings)];
 
@@ -173,15 +178,26 @@ export function TokenBalancesTable({
     <div className="rounded-xl border border-border bg-card overflow-hidden">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between">
         <h2 className="font-semibold text-foreground">Token Holdings</h2>
-        {dustHoldings.length > 0 && (
-          <button
-            onClick={() => setShowDust(!showDust)}
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-          >
-            <ChevronDown className={cn("w-3 h-3 transition-transform", showDust && "rotate-180")} />
-            {showDust ? "Hide" : `Show ${dustHoldings.length}`} dust
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {dustHoldings.length > 0 && (
+            <button
+              onClick={() => setShowDust(!showDust)}
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+            >
+              <ChevronDown className={cn("w-3 h-3 transition-transform", showDust && "rotate-180")} />
+              {showDust ? "Hide" : `Show ${dustHoldings.length}`} dust
+            </button>
+          )}
+          {spamHoldings.length > 0 && (
+            <button
+              onClick={() => setShowSpam(!showSpam)}
+              className="text-xs text-red-500/60 hover:text-red-500 flex items-center gap-1 transition-colors"
+            >
+              <ChevronDown className={cn("w-3 h-3 transition-transform", showSpam && "rotate-180")} />
+              {showSpam ? "Hide" : `Show ${spamHoldings.length}`} spam
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -241,8 +257,24 @@ export function TokenBalancesTable({
               return rows.map((r) => <TokenRow {...r} />);
             })()}
 
-            {/* Unpriced tokens — always shown at the bottom */}
+            {/* Unpriced real tokens — always shown at the bottom */}
             {unpricedHoldings.map((h) => (
+              <TokenRow
+                key={h.contractAddress}
+                symbol={h.symbol}
+                name={h.name}
+                logoURI={h.logoURI}
+                balance={h.balanceFormatted}
+                price={null}
+                value={null}
+                change24h={null}
+                priceSource={undefined}
+                unpriced
+              />
+            ))}
+
+            {/* Spam/phishing airdrop tokens — hidden by default */}
+            {showSpam && spamHoldings.map((h) => (
               <TokenRow
                 key={h.contractAddress}
                 symbol={h.symbol}

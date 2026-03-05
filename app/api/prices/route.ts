@@ -13,6 +13,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchPricesWithFallback } from "@/lib/pnl/prices";
 
+/**
+ * Protocol token aliases — map a token address to another token's price.
+ * Used for receipt/wrapper tokens that track an underlying 1:1.
+ * Key: token address (lowercase), Value: underlying address (lowercase)
+ *
+ * NOTE: veVIRTUAL (0x14559863...) is intentionally excluded — it is a
+ * governance-only voting token with no monetary value per Virtuals Protocol.
+ */
+const PRICE_ALIASES: Record<string, string> = {
+  // Add wrapper/receipt token aliases here as needed, e.g.:
+  // "0xwrapped...": "0xunderlying...",
+};
+
 export async function POST(req: NextRequest) {
   try {
     const { addresses } = await req.json() as { addresses: string[] };
@@ -22,6 +35,16 @@ export async function POST(req: NextRequest) {
     }
 
     const priceMap = await fetchPricesWithFallback(addresses);
+
+    // Apply protocol token aliases (e.g. veVIRTUAL → VIRTUAL price)
+    for (const [aliasAddr, underlyingAddr] of Object.entries(PRICE_ALIASES)) {
+      if (addresses.map(a => a.toLowerCase()).includes(aliasAddr) && !priceMap.has(aliasAddr)) {
+        const underlyingPrice = priceMap.get(underlyingAddr.toLowerCase());
+        if (underlyingPrice) {
+          priceMap.set(aliasAddr, { ...underlyingPrice });
+        }
+      }
+    }
 
     // Convert Map → plain object for JSON serialization
     const prices: Record<string, { priceUSD: number; change24hPct: number | null; source: string }> = {};

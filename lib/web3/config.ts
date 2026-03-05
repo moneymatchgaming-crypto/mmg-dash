@@ -13,12 +13,8 @@ import { injected, coinbaseWallet } from "wagmi/connectors";
 
 const alchemyKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
 
-function alchemyTransport(network: string) {
-  return alchemyKey
-    ? http(`https://${network}.g.alchemy.com/v2/${alchemyKey}`)
-    : http();
-}
-
+// Only use Alchemy for Base — the API key is scoped to Base Mainnet only.
+// All other chains fall back to their public RPC endpoints to avoid 403s.
 export const config = createConfig({
   chains: [mainnet, base, arbitrum, optimism, polygon],
   connectors: [
@@ -28,11 +24,11 @@ export const config = createConfig({
     // walletConnect({ projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID! }),
   ],
   transports: {
-    [mainnet.id]:   alchemyTransport("eth-mainnet"),
-    [base.id]:      alchemyTransport("base-mainnet"),
-    [arbitrum.id]:  alchemyTransport("arb-mainnet"),
-    [optimism.id]:  alchemyTransport("opt-mainnet"),
-    [polygon.id]:   alchemyTransport("polygon-mainnet"),
+    [mainnet.id]:   http(),   // public RPC — Alchemy key is Base-only
+    [base.id]:      alchemyKey ? http(`https://base-mainnet.g.alchemy.com/v2/${alchemyKey}`) : http(),
+    [arbitrum.id]:  http(),   // public RPC
+    [optimism.id]:  http(),   // public RPC
+    [polygon.id]:   http(),   // public RPC
   },
 });
 
