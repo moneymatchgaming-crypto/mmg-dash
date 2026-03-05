@@ -121,15 +121,24 @@ export async function fetchAlchemyTokenMetadata(
   const CHUNK = 50;
   const map = new Map<Address, TokenMetadata>();
 
+  // Build all chunks upfront, then fire them all in parallel
+  const chunks: Address[][] = [];
   for (let i = 0; i < contractAddresses.length; i += CHUNK) {
-    const chunk = contractAddresses.slice(i, i + CHUNK);
-    const calls = chunk.map((addr) => ({
-      method: "alchemy_getTokenMetadata",
-      params: [addr],
-    }));
+    chunks.push(contractAddresses.slice(i, i + CHUNK));
+  }
 
-    const results = await rpcBatch<AlchemyMetadataResult>(url, calls);
-    results.forEach((result, j) => {
+  const allResults = await Promise.all(
+    chunks.map((chunk) =>
+      rpcBatch<AlchemyMetadataResult>(
+        url,
+        chunk.map((addr) => ({ method: "alchemy_getTokenMetadata", params: [addr] }))
+      )
+    )
+  );
+
+  allResults.forEach((chunkResults, ci) => {
+    const chunk = chunks[ci];
+    chunkResults.forEach((result, j) => {
       const addr = chunk[j].toLowerCase() as Address;
       map.set(addr, {
         symbol:   result?.symbol   ?? "???",
@@ -138,7 +147,7 @@ export async function fetchAlchemyTokenMetadata(
         logoURI:  result?.logo     ?? undefined,
       });
     });
-  }
+  });
 
   return map;
 }

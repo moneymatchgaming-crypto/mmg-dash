@@ -85,16 +85,20 @@ async function fetchDefiLlamaPrices(addresses: string[]): Promise<PriceMap> {
   if (addresses.length === 0) return map;
 
   try {
-    // Map addresses to DefiLlama coin format
     const coins = addresses.map((a) =>
       a === ETH_NATIVE_KEY ? "coingecko:ethereum" : `base:${a.toLowerCase()}`
     );
+    const coinsStr = coins.join(",");
 
-    const url = `https://coins.llama.fi/prices/current/${coins.join(",")}`;
-    const res = await fetch(url);
-    if (!res.ok) return map;
+    // Fire prices + 24h percentage in parallel — no need to wait for one before the other
+    const [priceRes, changeRes] = await Promise.all([
+      fetch(`https://coins.llama.fi/prices/current/${coinsStr}`),
+      fetch(`https://coins.llama.fi/percentage/${coinsStr}?period=24h`),
+    ]);
 
-    const data = await res.json() as {
+    if (!priceRes.ok) return map;
+
+    const data = await priceRes.json() as {
       coins: Record<string, { price?: number; symbol?: string }>;
     };
 
@@ -105,16 +109,11 @@ async function fetchDefiLlamaPrices(addresses: string[]): Promise<PriceMap> {
       if (coin === "coingecko:ethereum") {
         map.set(ETH_NATIVE_KEY, price);
       } else {
-        // coin format: "base:0x..."
         const addr = coin.replace("base:", "").toLowerCase();
         map.set(addr, price);
       }
     }
 
-    // Try to get 24h changes via DefiLlama percentage endpoint
-    const changeRes = await fetch(
-      `https://coins.llama.fi/percentage/${coins.join(",")}?period=24h`
-    );
     if (changeRes.ok) {
       const changeData = await changeRes.json() as { coins: Record<string, number> };
       for (const [coin, pct] of Object.entries(changeData.coins)) {
@@ -177,18 +176,16 @@ export async function fetchPricesWithFallback(
   const addresses = [...new Set(rawAddresses.map((a) => a.toLowerCase()))];
   const finalMap: PriceMap = new Map();
 
-  // Stage 1: CoinGecko (batch)
-  const cgMap = await fetchCoinGeckoPrices(addresses);
-  cgMap.forEach((v, k) => finalMap.set(k, v));
+  // Stage 1: CoinGecko + DefiLlama in parallel for all addresses.
+  // CoinGecko wins on overlap (has 24h change data); DefiLlama fills gaps.
+  const [cgMap, llMap] = await Promise.all([
+    fetchCoinGeckoPrices(addresses),
+    fetchDefiLlamaPrices(addresses),
+  ]);
+  llMap.forEach((v, k) => finalMap.set(k, v));   // DefiLlama first (lower priority)
+  cgMap.forEach((v, k) => finalMap.set(k, v));   // CoinGecko overwrites (higher quality)
 
-  // Stage 2: DefiLlama for misses
-  const llMissing = addresses.filter((a) => !finalMap.has(a));
-  if (llMissing.length > 0) {
-    const llMap = await fetchDefiLlamaPrices(llMissing);
-    llMap.forEach((v, k) => finalMap.set(k, v));
-  }
-
-  // Stage 3: DexScreener for remaining misses (skip ETH_NATIVE_KEY)
+  // Stage 2: DexScreener for anything still missing (skip ETH_NATIVE_KEY)
   const dsMissing = addresses.filter(
     (a) => !finalMap.has(a) && a !== ETH_NATIVE_KEY
   );

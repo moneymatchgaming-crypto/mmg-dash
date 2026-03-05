@@ -15,9 +15,9 @@ export const ETH_NATIVE_KEY = "eth-native" as const;
 export const COINGECKO_PLATFORM = "base";
 
 export const STALE_TIMES = {
-  PRICES:       60_000,   // 1 min
-  BALANCES:     30_000,   // 30 s
-  LP_POSITIONS: 60_000,   // 1 min
+  PRICES:       120_000,  // 2 min  (was 1 min — prices don't change every second)
+  BALANCES:     120_000,  // 2 min  (was 30 s — wallet balances rarely change that fast)
+  LP_POSITIONS: 120_000,  // 2 min  (was 1 min)
   TX_HISTORY:   300_000,  // 5 min
 } as const;
 
