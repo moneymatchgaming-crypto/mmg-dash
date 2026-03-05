@@ -1,22 +1,23 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchPricesWithFallback } from "@/lib/pnl/prices";
 import { STALE_TIMES, ADDRESSES, ETH_NATIVE_KEY } from "@/lib/pnl/constants";
-import type { PriceMap } from "@/lib/pnl/types";
+import type { PriceMap, TokenPrice } from "@/lib/pnl/types";
 
 /**
  * Fetches USD prices for an array of token contract addresses.
- * Always includes native ETH.
- * Results are keyed by lowercase address.
+ * Always includes native ETH and WETH.
  *
- * CoinGecko → DefiLlama → DexScreener cascade (see lib/pnl/prices.ts).
+ * Calls /api/prices (server-side) → avoids browser CORS limits and keeps
+ * API keys off the client bundle.
+ *
+ * Price cascade: CoinGecko → DefiLlama → DexScreener (see lib/pnl/prices.ts)
  */
 export function usePrices(tokenAddresses: string[]): {
   priceMap: PriceMap;
   isLoading: boolean;
 } {
-  // Deduplicate + always include ETH and WETH (same price)
+  // Deduplicate + always include ETH and WETH
   const allAddresses = [
     ...new Set([
       ETH_NATIVE_KEY,
@@ -27,13 +28,30 @@ export function usePrices(tokenAddresses: string[]): {
 
   const { data, isPending } = useQuery<PriceMap>({
     queryKey: ["prices", [...allAddresses].sort()],
-    queryFn: async () => {
-      const map = await fetchPricesWithFallback(allAddresses);
+    queryFn: async (): Promise<PriceMap> => {
+      const res = await fetch("/api/prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ addresses: allAddresses }),
+      });
+
+      if (!res.ok) throw new Error(`/api/prices returned ${res.status}`);
+
+      const json = await res.json() as {
+        prices: Record<string, { priceUSD: number; change24hPct: number | null; source: string }>;
+      };
+
+      const map: PriceMap = new Map();
+      for (const [addr, price] of Object.entries(json.prices)) {
+        map.set(addr, price as TokenPrice);
+      }
+
       // WETH == ETH price
       if (!map.has(ADDRESSES.WETH.toLowerCase())) {
         const ethPrice = map.get(ETH_NATIVE_KEY);
         if (ethPrice) map.set(ADDRESSES.WETH.toLowerCase(), { ...ethPrice });
       }
+
       return map;
     },
     staleTime: STALE_TIMES.PRICES,

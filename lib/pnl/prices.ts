@@ -21,7 +21,8 @@ async function fetchCoinGeckoPrices(
   const map: PriceMap = new Map();
   if (contractAddresses.length === 0) return map;
 
-  const key = process.env.NEXT_PUBLIC_COINGECKO_API_KEY;
+  // Prefer server-only key (COINGECKO_API_KEY), fall back to public key if set
+  const key = process.env.COINGECKO_API_KEY || process.env.NEXT_PUBLIC_COINGECKO_API_KEY;
   const baseUrl = key
     ? "https://pro-api.coingecko.com/api/v3"
     : "https://api.coingecko.com/api/v3";

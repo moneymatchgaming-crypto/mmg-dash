@@ -1,12 +1,12 @@
 "use client";
 
-import { Wallet, LogOut, ChevronDown, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Wallet, LogOut, Loader2 } from "lucide-react";
 import { useConnect, useDisconnect } from "wagmi";
-import { injected, coinbaseWallet } from "wagmi/connectors";
+import { injected } from "wagmi/connectors";
 import { Button } from "@/components/ui/button";
 import { useWalletInfo } from "@/lib/web3/hooks/useWalletInfo";
 import { SUPPORTED_CHAINS } from "@/lib/web3/config";
-import { cn } from "@/lib/utils";
 
 function ChainBadge({ chainId }: { chainId: number }) {
   const chain = SUPPORTED_CHAINS.find((c) => c.id === chainId);
@@ -18,10 +18,27 @@ function ChainBadge({ chainId }: { chainId: number }) {
 }
 
 export function Header() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { address, isConnected, isConnecting, chainId, displayAddress } =
     useWalletInfo();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
+
+  // Render a stable skeleton until client hydration is complete.
+  // Prevents server/client mismatch from wagmi's wallet state being unknown on the server.
+  if (!mounted) {
+    return (
+      <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background/60 backdrop-blur-sm flex-shrink-0">
+        <div />
+        <Button disabled>
+          <Wallet className="w-4 h-4" />
+          Connect Wallet
+        </Button>
+      </header>
+    );
+  }
 
   return (
     <header className="flex items-center justify-between h-14 px-6 border-b border-border bg-background/60 backdrop-blur-sm flex-shrink-0">
