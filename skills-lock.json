@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "skills": {
+    "addresses": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "413a3119c30d194519de1b427f18129ca1c37252a6086f98a60268d965841db9"
+    },
+    "audit": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "b95c718e2d1a6e34a0931f0bbbe82518b065245650de7a657e4a4b1f99a13c62"
+    },
+    "building-blocks": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "a4b20d9f5023072470661240f7ab09eb451f821198c03c0df2292637234c28f0"
+    },
+    "concepts": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "f28adc312e892324a2cf9e38d29be14f4e6a36f9582306314a071d50e6846dd5"
+    },
+    "contracts": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "a49c858de7bab75904846078b1bf8eccf3623e4a89ef6dca24482fb611efbf3f"
+    },
+    "defi": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "632785181cb3ee566ccf75c8a735e1b9dc86ae1b9351e5377ae049be0f182c3c"
+    },
+    "ethereum-wingman": {
+      "source": "austintgriffith/ethereum-wingman",
+      "sourceType": "github",
+      "computedHash": "8ff5072b8d59959e9f5337bf04afe311b7b3ca165b08ef42a82f25a97b2b318e"
+    },
+    "ethskills": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "58b1339d14e0ec8a8b76813b653a93dce8ca93ed035cfa4012a96e26925a8ff2"
+    },
+    "frontend-playbook": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "ea93eadc6ca1ef88dc8fd591bb62ddef05e0da6890f020c4fde1b670313e51a7"
+    },
+    "frontend-ux": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "45979debb67b7dc29265a237be5ffb832b83b23f12c2a83e151c0041dfeca48f"
+    },
+    "gas": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "4ae97aafb11c207807df9f23173c686a6ed06a8394a45562c15a59019fcc1527"
+    },
+    "indexing": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "b98c66da47435f78a06b63ab06ab644216ba03e1751234ba0839538545dc76c4"
+    },
+    "l2": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "5584545899fe5764776931adbfea1adb8f4559e88b3931c129c98ac4772665b9"
+    },
+    "l2s": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "30f5f2a2aa7ba34d73b242462eb75dc7c4bc3fba377c41abeae4b58ca8219f59"
+    },
+    "layer2": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "63765867208b19d374d82ad92ec27e7903602284f7836e0e4100c08063211736"
+    },
+    "orchestration": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "daf5763680747a1407a02640fcb734bb9602363d9e2102f2d4c67edae7d25986"
+    },
+    "qa": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "8326b75bf6247723bc843159bd551bb39d637b9554a5c337d4a7df6c594b421d"
+    },
+    "security": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "f4fbe5bcdf6247b348c0a7796ed6a4d542ee69c340cf1d03187a410fa1d2826f"
+    },
+    "ship": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "967a653fcbbb217c181e81dbf045fb657dfc18416525d89304ea66d7844303d8"
+    },
+    "standards": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "543e60ad2d6a3f8b754e0a86b89ab8b9353392fe3fe42fdd6ae272bfdb3863d1"
+    },
+    "testing": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "a8b0c7b494f8fd06ce1884861896be4189eee51b1732bb3d9572177c350ab4e5"
+    },
+    "tools": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "c1d44dfd917917a3931284dfe98d08fdcc5d05875f6fa0c82669c0dc2b0a547b"
+    },
+    "wallets": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "a04f6c0fa36b9d3a5e191c7f902642113a47927e04685ba0efe96298850003c8"
+    },
+    "why-ethereum": {
+      "source": "austintgriffith/ethskills",
+      "sourceType": "github",
+      "computedHash": "e7e8eee7074145e1b0ca3d74a22155ddda8ff73edcca61f04f797c5e5a58d4e6"
+    }
+  }
+}
