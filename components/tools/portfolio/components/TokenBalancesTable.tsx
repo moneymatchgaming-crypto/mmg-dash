@@ -254,7 +254,7 @@ export function TokenBalancesTable({
               // Sort everything by USD value descending
               rows.sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
 
-              return rows.map((r) => <TokenRow {...r} />);
+              return rows.map(({ key, ...rest }) => <TokenRow key={key} {...rest} />);
             })()}
 
             {/* Unpriced real tokens — always shown at the bottom */}
