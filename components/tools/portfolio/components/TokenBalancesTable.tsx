@@ -196,39 +196,52 @@ export function TokenBalancesTable({
             </tr>
           </thead>
           <tbody>
-            {/* Native ETH — always first */}
-            {(nativeETH?.balanceFormatted ?? 0) > 0 && (
-              <TokenRow
-                symbol="ETH"
-                name="Ether (native)"
-                balance={nativeETH!.balanceFormatted}
-                price={ethPrice?.priceUSD ?? null}
-                value={ethValue}
-                change24h={ethPrice?.change24hPct ?? null}
-                priceSource={ethPrice?.source}
-              />
-            )}
-            {/* ERC-20 holdings:
-                - Unpriced tokens always shown first (at bottom of priced ones below native ETH)
-                - Priced tokens sorted by value descending
-            */}
-            {/* Priced (main or all if showDust) */}
-            {(showDust ? pricedHoldings : mainHoldings)
-              .sort((a, b) => (b.valueUSD ?? 0) - (a.valueUSD ?? 0))
-              .map((h) => (
-                <TokenRow
-                  key={h.contractAddress}
-                  symbol={h.symbol}
-                  name={h.name}
-                  logoURI={h.logoURI}
-                  balance={h.balanceFormatted}
-                  price={h.price?.priceUSD ?? null}
-                  value={h.valueUSD}
-                  change24h={h.price?.change24hPct ?? null}
-                  priceSource={h.price?.source}
-                />
-              ))}
-            {/* Unpriced tokens — always shown, at the bottom */}
+            {/* All priced holdings sorted by USD value descending — ETH included */}
+            {(() => {
+              type Row = {
+                key: string; symbol: string; name: string; logoURI?: string;
+                balance: number; price: number | null; value: number | null;
+                change24h: number | null; priceSource?: PriceSource;
+              };
+
+              const rows: Row[] = [];
+
+              // Native ETH as a sortable row
+              if ((nativeETH?.balanceFormatted ?? 0) > 0) {
+                rows.push({
+                  key: "eth-native",
+                  symbol: "ETH",
+                  name: "Ether (native)",
+                  balance: nativeETH!.balanceFormatted,
+                  price: ethPrice?.priceUSD ?? null,
+                  value: ethValue,
+                  change24h: ethPrice?.change24hPct ?? null,
+                  priceSource: ethPrice?.source,
+                });
+              }
+
+              // ERC-20 priced holdings
+              (showDust ? pricedHoldings : mainHoldings).forEach((h) => {
+                rows.push({
+                  key: h.contractAddress,
+                  symbol: h.symbol,
+                  name: h.name,
+                  logoURI: h.logoURI,
+                  balance: h.balanceFormatted,
+                  price: h.price?.priceUSD ?? null,
+                  value: h.valueUSD,
+                  change24h: h.price?.change24hPct ?? null,
+                  priceSource: h.price?.source,
+                });
+              });
+
+              // Sort everything by USD value descending
+              rows.sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
+
+              return rows.map((r) => <TokenRow {...r} />);
+            })()}
+
+            {/* Unpriced tokens — always shown at the bottom */}
             {unpricedHoldings.map((h) => (
               <TokenRow
                 key={h.contractAddress}
