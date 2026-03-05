@@ -13,7 +13,10 @@ import type { PriceMap, TokenPrice } from "@/lib/pnl/types";
  *
  * Price cascade: CoinGecko → DefiLlama → DexScreener (see lib/pnl/prices.ts)
  */
-export function usePrices(tokenAddresses: string[]): {
+export function usePrices(
+  tokenAddresses: string[],
+  options?: { enabled?: boolean }
+): {
   priceMap: PriceMap;
   isLoading: boolean;
 } {
@@ -25,6 +28,8 @@ export function usePrices(tokenAddresses: string[]): {
       ...tokenAddresses.map((a) => a.toLowerCase()),
     ]),
   ];
+
+  const fetchEnabled = options?.enabled !== false;
 
   const { data, isPending } = useQuery<PriceMap>({
     queryKey: ["prices", [...allAddresses].sort()],
@@ -56,7 +61,7 @@ export function usePrices(tokenAddresses: string[]): {
     },
     staleTime: STALE_TIMES.PRICES,
     refetchInterval: STALE_TIMES.PRICES,
-    enabled: allAddresses.length > 0,
+    enabled: fetchEnabled && allAddresses.length > 0,
   });
 
   return {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { RefreshCw, Wallet } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWalletInfo } from "@/lib/web3/hooks/useWalletInfo";
@@ -11,8 +12,12 @@ import { Button } from "@/components/ui/button";
 import { StatsSummary } from "./components/StatsSummary";
 import { TokenBalancesTable } from "./components/TokenBalancesTable";
 import { LPPositionsTable } from "./components/LPPositionsTable";
-import { ETH_NATIVE_KEY } from "@/lib/pnl/constants";
-import type { PnLSummary, TokenHolding, UniV3PositionWithValue } from "@/lib/pnl/types";
+import { ETH_NATIVE_KEY, STALE_TIMES } from "@/lib/pnl/constants";
+import { fetchCovalentPortfolio, type CovalentPortfolioData } from "@/lib/pnl/covalent";
+import type { PnLSummary, TokenHolding, UniV3PositionWithValue, PriceMap } from "@/lib/pnl/types";
+
+// Detect at module init (not inside render) so it's stable
+const HAS_COVALENT = !!process.env.NEXT_PUBLIC_COVALENT_API_KEY;
 
 export default function Portfolio() {
   const [mounted, setMounted] = useState(false);
@@ -21,19 +26,60 @@ export default function Portfolio() {
   const { address, isConnected, displayAddress } = useWalletInfo();
   const queryClient = useQueryClient();
 
-  // ── Data hooks ────────────────────────────────────────────────────────────
-  const { balances, isLoading: balancesLoading, contractAddresses } = useTokenBalances(address);
-  const { balanceFormatted: ethBalance, isLoading: ethLoading, priceKey } = useNativeBalance(address);
-  const { positions, isLoading: lpLoading, tokenAddresses: lpTokenAddresses } = useLPPositions(address);
+  // ── Covalent path: one call = balances + native ETH + prices ─────────────
+  const { data: covalentData, isPending: covalentLoading } = useQuery<CovalentPortfolioData>({
+    queryKey: ["covalentPortfolio", address],
+    queryFn: () => fetchCovalentPortfolio(address!),
+    enabled: HAS_COVALENT && !!address,
+    staleTime: STALE_TIMES.BALANCES,
+    refetchInterval: STALE_TIMES.BALANCES,
+  });
 
-  // Collect all unique token addresses for price fetching
-  const allTokenAddresses = useMemo(
-    () => [...new Set([...contractAddresses, ...lpTokenAddresses, ETH_NATIVE_KEY])],
-    [contractAddresses, lpTokenAddresses]
+  // ── Alchemy fallback path (used only when no Covalent key) ───────────────
+  const { balances: alchemyBalances, isLoading: alchemyLoading, contractAddresses: alchemyAddresses } =
+    useTokenBalances(!HAS_COVALENT ? address : undefined);
+  const { balanceFormatted: alchemyETH, isLoading: alchemyETHLoading } =
+    useNativeBalance(!HAS_COVALENT ? address : undefined);
+
+  // ── LP positions: always fetched (Covalent doesn't cover LP) ─────────────
+  const { positions, isLoading: lpLoading, tokenAddresses: lpTokenAddresses } =
+    useLPPositions(address);
+
+  // ── Price fetching ────────────────────────────────────────────────────────
+  // Covalent path: only LP tokens that Covalent didn't price need extra fetching.
+  // Alchemy path:  all wallet + LP addresses need pricing.
+  const extraPriceAddresses = useMemo(() => {
+    if (HAS_COVALENT) {
+      if (!covalentData) return []; // wait for Covalent before firing price requests
+      const priced = covalentData.priceMap;
+      const missing = lpTokenAddresses.filter((a) => !priced.has(a.toLowerCase()));
+      return missing.length > 0 ? [ETH_NATIVE_KEY, ...missing] : [];
+    }
+    return [...new Set([...alchemyAddresses, ...lpTokenAddresses, ETH_NATIVE_KEY])];
+  }, [covalentData, lpTokenAddresses, alchemyAddresses]);
+
+  const { priceMap: extraPrices, isLoading: extraPricesLoading } = usePrices(
+    extraPriceAddresses,
+    { enabled: HAS_COVALENT ? !!covalentData : true }
   );
-  const { priceMap, isLoading: pricesLoading } = usePrices(allTokenAddresses);
 
-  const isLoading = balancesLoading || ethLoading || lpLoading || pricesLoading;
+  // ── Merge price maps ──────────────────────────────────────────────────────
+  const priceMap: PriceMap = useMemo(() => {
+    if (HAS_COVALENT && covalentData?.priceMap) {
+      // Covalent prices take priority; extraPrices fills in any LP-only tokens
+      return new Map([...extraPrices, ...covalentData.priceMap]);
+    }
+    return extraPrices;
+  }, [covalentData?.priceMap, extraPrices]);
+
+  // ── Unified values ────────────────────────────────────────────────────────
+  const balances     = HAS_COVALENT ? (covalentData?.balances ?? []) : alchemyBalances;
+  const ethBalance   = HAS_COVALENT ? (covalentData?.nativeETH?.balanceFormatted ?? 0) : alchemyETH;
+  const nativeETHObj = HAS_COVALENT ? covalentData?.nativeETH ?? null : { balanceFormatted: alchemyETH };
+
+  const isLoading = HAS_COVALENT
+    ? covalentLoading || lpLoading
+    : alchemyLoading || alchemyETHLoading || lpLoading || extraPricesLoading;
 
   // ── Enrich token holdings with prices ────────────────────────────────────
   const holdings: TokenHolding[] = balances.map((b) => {
@@ -83,14 +129,17 @@ export default function Portfolio() {
     openLPCount: enrichedPositions.filter((p) => !p.isClosed).length,
   };
 
-  // ── Unpriced count ────────────────────────────────────────────────────────
   const unpricedCount = holdings.filter((h) => h.price === null).length;
 
   // ── Refresh handler ───────────────────────────────────────────────────────
   const handleRefresh = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["tokenBalances"] });
+    if (HAS_COVALENT) {
+      queryClient.invalidateQueries({ queryKey: ["covalentPortfolio"] });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["tokenBalances"] });
+      queryClient.invalidateQueries({ queryKey: ["prices"] });
+    }
     queryClient.invalidateQueries({ queryKey: ["lpPositions"] });
-    queryClient.invalidateQueries({ queryKey: ["prices"] });
   }, [queryClient]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -137,15 +186,15 @@ export default function Portfolio() {
           {/* Token Holdings */}
           <TokenBalancesTable
             holdings={holdings}
-            nativeETH={mounted && isConnected ? { balanceFormatted: ethBalance } : null}
+            nativeETH={mounted && isConnected ? nativeETHObj : null}
             priceMap={priceMap}
-            isLoading={balancesLoading || pricesLoading}
+            isLoading={isLoading}
           />
 
           {/* LP Positions */}
           <LPPositionsTable
             positions={enrichedPositions}
-            isLoading={lpLoading || pricesLoading}
+            isLoading={lpLoading}
           />
         </>
       )}
