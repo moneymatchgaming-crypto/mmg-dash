@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { RefreshCw, Wallet } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWalletInfo } from "@/lib/web3/hooks/useWalletInfo";
@@ -15,6 +15,9 @@ import { ETH_NATIVE_KEY } from "@/lib/pnl/constants";
 import type { PnLSummary, TokenHolding, UniV3PositionWithValue } from "@/lib/pnl/types";
 
 export default function Portfolio() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { address, isConnected, displayAddress } = useWalletInfo();
   const queryClient = useQueryClient();
 
@@ -100,12 +103,12 @@ export default function Portfolio() {
             Portfolio
           </h1>
           <p className="text-muted-foreground mt-0.5 text-sm">
-            {isConnected
+            {mounted && isConnected
               ? `Holdings for ${displayAddress} · Base`
               : "Track your wallet holdings and LP positions"}
           </p>
         </div>
-        {isConnected && (
+        {mounted && isConnected && (
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading}>
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isLoading ? "animate-spin" : ""}`} />
             Refresh
@@ -114,7 +117,7 @@ export default function Portfolio() {
       </div>
 
       {/* Not connected */}
-      {!isConnected ? (
+      {!mounted || !isConnected ? (
         <div className="rounded-xl border border-border bg-card p-12 text-center">
           <Wallet className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
           <p className="text-foreground font-medium">No wallet connected</p>
@@ -134,7 +137,7 @@ export default function Portfolio() {
           {/* Token Holdings */}
           <TokenBalancesTable
             holdings={holdings}
-            nativeETH={isConnected ? { balanceFormatted: ethBalance } : null}
+            nativeETH={mounted && isConnected ? { balanceFormatted: ethBalance } : null}
             priceMap={priceMap}
             isLoading={balancesLoading || pricesLoading}
           />

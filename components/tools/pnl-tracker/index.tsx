@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, Wallet, Clock, AlertCircle } from "lucide-react";
 import { useWalletInfo } from "@/lib/web3/hooks/useWalletInfo";
 import { useTokenBalances } from "@/lib/web3/hooks/useTokenBalances";
@@ -36,6 +36,9 @@ function SummaryCard({ title, children, loading }: { title: string; children: Re
 }
 
 export default function PnLTracker() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const { address, isConnected, displayAddress } = useWalletInfo();
 
   // Get current portfolio data (same as Portfolio tool) for current prices
@@ -52,7 +55,7 @@ export default function PnLTracker() {
 
   const isLoading = pnlLoading || pricesLoading;
 
-  if (!isConnected) {
+  if (!mounted || !isConnected) {
     return (
       <div className="max-w-6xl mx-auto">
         <div className="mb-6">
