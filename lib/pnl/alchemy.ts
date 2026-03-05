@@ -65,21 +65,36 @@ interface RawTokenBalance {
 }
 
 /**
- * Fetch all ERC-20 token balances for a wallet.
+ * Fetch ALL ERC-20 token balances for a wallet, paginating through every page.
+ * Alchemy returns up to 100 tokens per page — active DeFi wallets exceed this easily.
  * Returns only tokens with non-zero balance.
  */
 export async function fetchAlchemyTokenBalances(
   url: string,
   address: Address
 ): Promise<Array<{ contractAddress: Address; rawBalance: bigint }>> {
-  const result = await rpc<{ tokenBalances: RawTokenBalance[] }>(
-    url,
-    "alchemy_getTokenBalances",
-    [address, "erc20"]
-  );
+  const allBalances: RawTokenBalance[] = [];
+  let pageKey: string | undefined;
 
-  return result.tokenBalances
-    .filter((b) => b.tokenBalance !== "0x0000000000000000000000000000000000000000000000000000000000000000")
+  const ZERO_BALANCE = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+  do {
+    const params: unknown[] = pageKey
+      ? [address, "erc20", { pageKey }]
+      : [address, "erc20"];
+
+    const result = await rpc<{ tokenBalances: RawTokenBalance[]; pageKey?: string }>(
+      url,
+      "alchemy_getTokenBalances",
+      params
+    );
+
+    allBalances.push(...result.tokenBalances);
+    pageKey = result.pageKey;
+  } while (pageKey);
+
+  return allBalances
+    .filter((b) => b.tokenBalance && b.tokenBalance !== ZERO_BALANCE && BigInt(b.tokenBalance) > 0n)
     .map((b) => ({
       contractAddress: b.contractAddress.toLowerCase() as Address,
       rawBalance: BigInt(b.tokenBalance),
